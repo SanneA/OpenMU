@@ -8268,59 +8268,11 @@ namespace MUnique.OpenMU.Web.AdminPanel.Properties {
             }
         }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Success rate.
-        /// </summary>
-        public static string SuccessRate {
-            get {
-                return ResourceManager.GetString("SuccessRate", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Required items.
-        /// </summary>
-        public static string RequiredItems {
-            get {
-                return ResourceManager.GetString("RequiredItems", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Add required item.
-        /// </summary>
-        public static string AddRequiredItem {
-            get {
-                return ResourceManager.GetString("AddRequiredItem", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Result.
-        /// </summary>
-        public static string Result {
-            get {
-                return ResourceManager.GetString("Result", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Price.
-        /// </summary>
-        public static string Price {
-            get {
-                return ResourceManager.GetString("Price", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Result items.
-        /// </summary>
-        public static string ResultItems {
-            get {
-                return ResourceManager.GetString("ResultItems", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   Looks up a localized string similar to The game configuration contains no chaos machine mixes..
@@ -8331,13 +8283,5 @@ namespace MUnique.OpenMU.Web.AdminPanel.Properties {
             }
         }
 
-        /// <summary>
-        ///   Looks up a localized string similar to This mix has no simple crafting settings; it&apos;s implemented by its handler class..
-        /// </summary>
-        public static string NoSimpleCraftingSettings {
-            get {
-                return ResourceManager.GetString("NoSimpleCraftingSettings", resourceCulture);
-            }
-        }
     }
 }

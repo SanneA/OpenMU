@@ -40,27 +40,28 @@ name of the handler class which implements it. Most mixes are implemented by the
   and the chances for luck, skill and excellent options in a random result item.
 
 Mixes which are not implemented by the simple handler have no simple crafting
-settings; the page shows them with a note, because their behaviour is defined by
+settings; the page offers to create them, because their behaviour is defined by
 their handler class.
 
-## Editing the required items
+## Editing and saving
 
-The required items of a mix are edited in place: each one has its own block with
-the amount and item level ranges, the chance addition per additional item, the
-NPC price divisor, the reference number, and what happens to the item when the
-mix succeeds or fails.
+Every mix is shown with its own form and its own **Save** button, so a change is
+saved for that mix only — the other mixes of the page are not affected. **Cancel**
+discards the changes of the mix and loads it again from the database.
 
-* **Possible items** — the items which are accepted by the requirement. Select
-  one or more; with none selected, the requirement accepts any item (the item
-  summary then says *Random Item*).
-* **Required item options** — options the items must have, e.g. the luck
-  option.
-* **Add required item** creates an empty requirement with an amount of one, which
-  then gets its items and values; **Remove** deletes the requirement and its
-  possible items.
+The form contains all properties of the mix: its number and name, the handler
+class, the success rates and the other crafting settings, and the lists of
+required and result items. The items are edited with the same controls as in the
+full configuration:
 
-New and changed required items are saved together with the other changes of the
-page with **Save changes**.
+* **Create** adds a new entry to a list, e.g. a new required item, which gets
+  its amount and item level ranges, the chance addition per additional item, the
+  NPC price divisor, the reference number, and what happens to the item when the
+  mix succeeds or fails.
+* **Remove** deletes an entry and its own children.
+* References such as the possible items of a required item, or the items of a
+  result item, are picked from a searchable list of the existing configuration
+  entries.
 
 ## How the success rate is calculated
 

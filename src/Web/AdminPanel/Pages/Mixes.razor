@@ -1,12 +1,10 @@
 @page "/mixes"
 
-@using MUnique.OpenMU.DataModel
 @using MUnique.OpenMU.DataModel.Configuration
-@using MUnique.OpenMU.DataModel.Configuration.ItemCrafting
-@using MUnique.OpenMU.DataModel.Configuration.Items
 @using MUnique.OpenMU.Persistence
 @using MUnique.OpenMU.Web.AdminPanel.Components.ItemDrops
 @using MUnique.OpenMU.Web.AdminPanel.Properties
+@using MUnique.OpenMU.Web.Shared.Components.Form
 
 <PageTitle>OpenMU: @Resources.Mixes</PageTitle>
 <Breadcrumb IsFirstFromRoot="true" Caption="@Resources.Mixes" />
@@ -14,7 +12,7 @@
 <h1>@Resources.Mixes</h1>
 <p class="text-muted">@Resources.MixesPageDescription</p>
 
-@if (this._gameConfiguration is null || this._editContext is null)
+@if (this._gameConfiguration is null)
 {
     return;
 }
@@ -22,8 +20,6 @@
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <input type="search" class="form-control form-control-sm" style="max-width: 24rem" placeholder="@($"{Resources.Search}...")"
            @bind="this._filter" @bind:event="oninput" />
-    <button type="button" class="btn btn-primary btn-sm" @onclick="this.OnSaveButtonClickAsync">@Resources.SaveChanges</button>
-    <button type="button" class="btn btn-secondary btn-sm" @onclick="this.OnDiscardButtonClickAsync">@Resources.DiscardChanges</button>
 </div>
 
 @if (!this.CraftingGroups.Any())
@@ -31,184 +27,24 @@
     <p class="text-muted fst-italic">@Resources.NoChaosMixes</p>
 }
 
-@foreach (var (title, craftings) in this.CraftingGroups)
+@foreach (var (category, craftings) in this.CraftingGroups)
 {
-    <CollapsibleSection Title="@title" Badge="@craftings.Count.ToString()" InitiallyExpanded="true">
-        @foreach (var crafting in craftings)
+    <CollapsibleSection Title="@category.Title" Badge="@craftings.Count.ToString()" InitiallyExpanded="true">
+        @foreach (var mix in craftings)
         {
             <div class="card mb-3">
                 <div class="card-header d-flex flex-wrap align-items-baseline gap-2">
-                    <span class="badge text-bg-primary">@crafting.Number</span>
-                    <strong>@crafting.Name.ToString()</strong>
-                    <small class="text-muted">@crafting.ItemCraftingHandlerClassName</small>
+                    <span class="badge text-bg-primary">@mix.Number</span>
+                    <strong>@mix.Name.ToString()</strong>
+                    <small class="text-muted">@mix.ItemCraftingHandlerClassName</small>
                 </div>
                 <div class="card-body">
-                    @if (crafting.SimpleCraftingSettings is { } settings)
-                    {
-                        <h6 class="text-uppercase text-muted small">@Resources.SuccessRate</h6>
-                        <div class="row g-3 mb-3">
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercent))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercent))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.SuccessPercent" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.MaximumSuccessPercent))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.MaximumSuccessPercent))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.MaximumSuccessPercent" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForLuck))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForLuck))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.SuccessPercentageAdditionForLuck" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForExcellentItem))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForExcellentItem))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.SuccessPercentageAdditionForExcellentItem" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForAncientItem))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForAncientItem))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.SuccessPercentageAdditionForAncientItem" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForGuardianItem))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForGuardianItem))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.SuccessPercentageAdditionForGuardianItem" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForSocketItem))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.SuccessPercentageAdditionForSocketItem))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.SuccessPercentageAdditionForSocketItem" />
-                            </div>
-                        </div>
-
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <h6 class="text-uppercase text-muted small mb-0">@Resources.RequiredItems</h6>
-                            <button type="button" class="btn btn-outline-primary btn-sm" @onclick="() => this.OnAddRequiredItem(crafting)">@Resources.AddRequiredItem</button>
-                        </div>
-                        @foreach (var requiredItem in settings.RequiredItems)
-                        {
-                            <div class="border rounded p-2 mb-2">
-                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                    <strong class="small">@requiredItem</strong>
-                                    <button type="button" class="btn btn-outline-danger btn-sm ms-auto" @onclick="() => this.OnRemoveRequiredItemAsync(crafting, requiredItem)">@Resources.Remove</button>
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-6 col-md-2 col-xl-1">
-                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MinimumAmount))</label>
-                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.MinimumAmount" />
-                                    </div>
-                                    <div class="col-6 col-md-2 col-xl-1">
-                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MaximumAmount))</label>
-                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.MaximumAmount" />
-                                    </div>
-                                    <div class="col-6 col-md-2 col-xl-1">
-                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MinimumItemLevel))</label>
-                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.MinimumItemLevel" />
-                                    </div>
-                                    <div class="col-6 col-md-2 col-xl-1">
-                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MaximumItemLevel))</label>
-                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.MaximumItemLevel" />
-                                    </div>
-                                    <div class="col-6 col-md-2 col-xl-1">
-                                        <label class="form-label small mb-1" title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.AddPercentage))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.AddPercentage))</label>
-                                        <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="requiredItem.AddPercentage" />
-                                    </div>
-                                    <div class="col-6 col-md-2 col-xl-1">
-                                        <label class="form-label small mb-1" title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.NpcPriceDivisor))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.NpcPriceDivisor))</label>
-                                        <input type="number" min="0" class="form-control form-control-sm" @bind="requiredItem.NpcPriceDivisor" />
-                                    </div>
-                                    <div class="col-6 col-md-2 col-xl-1">
-                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.Reference))</label>
-                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.Reference" />
-                                    </div>
-                                    <div class="col-6 col-md-3 col-xl-2">
-                                        <label class="form-label small mb-1" title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.SuccessResult))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.SuccessResult))</label>
-                                        <select class="form-select form-select-sm" @bind="requiredItem.SuccessResult">
-                                            @foreach (var mixResult in Enum.GetValues<MixResult>())
-                                            {
-                                                <option value="@mixResult">@mixResult.GetEnumCaption()</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-xl-2">
-                                        <label class="form-label small mb-1" title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.FailResult))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.FailResult))</label>
-                                        <select class="form-select form-select-sm" @bind="requiredItem.FailResult">
-                                            @foreach (var mixResult in Enum.GetValues<MixResult>())
-                                            {
-                                                <option value="@mixResult">@mixResult.GetEnumCaption()</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-md-6">
-                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.PossibleItems))</label>
-                                        <select multiple size="6" class="form-select form-select-sm"
-                                                @onchange="args => this.OnPossibleItemsChanged(requiredItem, args)">
-                                            @foreach (var item in this.Items)
-                                            {
-                                                <option value="@item.GetId()" selected="@requiredItem.PossibleItems.Contains(item)">@item.Name.ToString()</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-md-6">
-                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.RequiredItemOptions))</label>
-                                        <select multiple size="6" class="form-select form-select-sm"
-                                                @onchange="args => this.OnRequiredItemOptionsChanged(requiredItem, args)">
-                                            @foreach (var optionType in this.OptionTypes)
-                                            {
-                                                <option value="@optionType.GetId()" selected="@requiredItem.RequiredItemOptions.Contains(optionType)">@optionType.Name.ToString()</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-
-                        <h6 class="text-uppercase text-muted small mt-3">@Resources.Price</h6>
-                        <div class="row g-3 mb-3">
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.Money))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.Money))</label>
-                                <input type="number" min="0" class="form-control form-control-sm" @bind="settings.Money" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.MoneyPerFinalSuccessPercentage))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.MoneyPerFinalSuccessPercentage))</label>
-                                <input type="number" min="0" class="form-control form-control-sm" @bind="settings.MoneyPerFinalSuccessPercentage" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.NpcPriceDivisor))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.NpcPriceDivisor))</label>
-                                <input type="number" min="0" class="form-control form-control-sm" @bind="settings.NpcPriceDivisor" />
-                            </div>
-                        </div>
-
-                        <h6 class="text-uppercase text-muted small">@Resources.Result</h6>
-                        <div class="row g-3">
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemSelect))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemSelect))</label>
-                                <select class="form-select form-select-sm" @bind="settings.ResultItemSelect">
-                                    @foreach (var selection in Enum.GetValues<ResultItemSelection>())
-                                    {
-                                        <option value="@selection">@selection.GetEnumCaption()</option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemLuckOptionChance))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemLuckOptionChance))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.ResultItemLuckOptionChance" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemSkillChance))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemSkillChance))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.ResultItemSkillChance" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemExcellentOptionChance))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemExcellentOptionChance))</label>
-                                <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="settings.ResultItemExcellentOptionChance" />
-                            </div>
-                            <div class="col-6 col-md-3 col-xl-2">
-                                <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemMaxExcOptionCount))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.ResultItemMaxExcOptionCount))</label>
-                                <input type="number" min="0" max="6" class="form-control form-control-sm" @bind="settings.ResultItemMaxExcOptionCount" />
-                            </div>
-                        </div>
-                        <p class="small text-muted mb-0 mt-3">@Resources.ResultItems: @string.Join(", ", settings.ResultItems.Select(item => item.ToString()))</p>
-                    }
-                    else
-                    {
-                        <p class="text-muted fst-italic mb-0">@Resources.NoSimpleCraftingSettings</p>
-                    }
+                    <CascadingValue TValue="IContext" Value="category.Context">
+                        <AutoForm Model="mix"
+                                  OnValidSubmit="() => this.OnSaveAsync(category)"
+                                  OnCancel="this.GetDiscardCallback(category)"
+                                  IsProcessing="category.IsSaving" />
+                    </CascadingValue>
                 </div>
             </div>
         }
