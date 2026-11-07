@@ -2728,4 +2728,31 @@
   <data name="ExcellentOptionsHint" xml:space="preserve">
     <value>Empty means that the value of the excellent option definition of the item applies. The first option is always added without a chance.</value>
   </data>
+  <data name="ChaosGoblin" xml:space="preserve">
+    <value>Chaos Goblin</value>
+  </data>
+  <data name="ChaosGoblinPageDescription" xml:space="preserve">
+    <value>The mixes of the chaos machine, grouped by the NPC which offers them. Here you see the success rates and what happens to the required items when a mix fails.</value>
+  </data>
+  <data name="SuccessRate" xml:space="preserve">
+    <value>Success rate</value>
+  </data>
+  <data name="RequiredItems" xml:space="preserve">
+    <value>Required items</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Price" xml:space="preserve">
+    <value>Price</value>
+  </data>
+  <data name="ResultItems" xml:space="preserve">
+    <value>Result items</value>
+  </data>
+  <data name="NoChaosMixes" xml:space="preserve">
+    <value>The game configuration contains no chaos machine mixes.</value>
+  </data>
+  <data name="NoSimpleCraftingSettings" xml:space="preserve">
+    <value>This mix has no simple crafting settings; it's implemented by its handler class.</value>
+  </data>
 </root>
