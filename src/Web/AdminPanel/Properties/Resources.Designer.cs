@@ -8287,6 +8287,15 @@ namespace MUnique.OpenMU.Web.AdminPanel.Properties {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Add required item.
+        /// </summary>
+        public static string AddRequiredItem {
+            get {
+                return ResourceManager.GetString("AddRequiredItem", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Result.
         /// </summary>
         public static string Result {

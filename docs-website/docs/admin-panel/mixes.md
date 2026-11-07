@@ -43,6 +43,25 @@ Mixes which are not implemented by the simple handler have no simple crafting
 settings; the page shows them with a note, because their behaviour is defined by
 their handler class.
 
+## Editing the required items
+
+The required items of a mix are edited in place: each one has its own block with
+the amount and item level ranges, the chance addition per additional item, the
+NPC price divisor, the reference number, and what happens to the item when the
+mix succeeds or fails.
+
+* **Possible items** — the items which are accepted by the requirement. Select
+  one or more; with none selected, the requirement accepts any item (the item
+  summary then says *Random Item*).
+* **Required item options** — options the items must have, e.g. the luck
+  option.
+* **Add required item** creates an empty requirement with an amount of one, which
+  then gets its items and values; **Remove** deletes the requirement and its
+  possible items.
+
+New and changed required items are saved together with the other changes of the
+page with **Save changes**.
+
 ## How the success rate is calculated
 
 The success rate is the base *success percent*, plus the additions of the
