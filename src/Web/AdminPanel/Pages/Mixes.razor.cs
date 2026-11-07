@@ -1,4 +1,4 @@
-// <copyright file="ChaosGoblin.razor.cs" company="MUnique">
+// <copyright file="Mixes.razor.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -16,9 +16,9 @@ using MUnique.OpenMU.Web.Shared.Components.Toast;
 using MUnique.OpenMU.Web.Shared.Services;
 
 /// <summary>
-/// A page which shows the crafting definitions (mixes) of the chaos machine, e.g. the chaos goblin.
+/// A page which shows the crafting definitions (mixes) of the chaos machine and the other NPCs which offer them.
 /// </summary>
-public partial class ChaosGoblin : ComponentBase, IAsyncDisposable
+public partial class Mixes : ComponentBase, IAsyncDisposable
 {
     private readonly List<MonsterDefinition> _monsters = [];
 
@@ -54,7 +54,7 @@ public partial class ChaosGoblin : ComponentBase, IAsyncDisposable
     /// Gets or sets the logger.
     /// </summary>
     [Inject]
-    public ILogger<ChaosGoblin> Logger { get; set; } = null!;
+    public ILogger<Mixes> Logger { get; set; } = null!;
 
     /// <summary>
     /// Gets the monsters with their crafting definitions, grouped and filtered by the search term.
@@ -136,7 +136,7 @@ public partial class ChaosGoblin : ComponentBase, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            this.Logger.LogError(ex, "Error loading the chaos machine craftings");
+            this.Logger.LogError(ex, "Error loading the mixes");
         }
     }
 

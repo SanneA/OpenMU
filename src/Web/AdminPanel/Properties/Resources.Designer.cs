@@ -8251,20 +8251,20 @@ namespace MUnique.OpenMU.Web.AdminPanel.Properties {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Chaos Goblin.
+        ///   Looks up a localized string similar to Mixes.
         /// </summary>
-        public static string ChaosGoblin {
+        public static string Mixes {
             get {
-                return ResourceManager.GetString("ChaosGoblin", resourceCulture);
+                return ResourceManager.GetString("Mixes", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to The mixes of the chaos machine, grouped by the NPC which offers them..
+        ///   Looks up a localized string similar to The mixes of the chaos machine and the other NPCs which offer them, grouped by the NPC..
         /// </summary>
-        public static string ChaosGoblinPageDescription {
+        public static string MixesPageDescription {
             get {
-                return ResourceManager.GetString("ChaosGoblinPageDescription", resourceCulture);
+                return ResourceManager.GetString("MixesPageDescription", resourceCulture);
             }
         }
 
