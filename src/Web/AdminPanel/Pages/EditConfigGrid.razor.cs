@@ -183,6 +183,8 @@ public partial class EditConfigGrid : ComponentBase, IAsyncDisposable
             data = await context.GetAsync(this.Type, cancellationToken).ConfigureAwait(false);
         }
 
+        // Objects with a number, like monsters, are ordered by it; the name is only the fallback
+        // for objects without a number, and for entries which share the same number.
         this._viewModels = data.OfType<object>()
             .Select(o => new ViewModel(o))
             // Objects with a number, like monsters, are ordered by it; the name is only the fallback
