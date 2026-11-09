@@ -14,9 +14,9 @@ combine items to create wings, and so on. Each mix is an `ItemCrafting` in the
 game configuration and is attached to the monster which offers it.
 
 The page shows all mix definitions of the game configuration, grouped by the NPC
-which offers them, and lets you edit their success rates and the fail results of
-their required items without navigating through the full configuration. The
-search field filters by NPC name, mix name or number, and handler class.
+which offers them. The categories and their mixes are collapsed by default: open
+an NPC to see its mixes, which are sorted by their number, and open a mix to edit
+it. The search field filters by NPC name, mix name or number, and handler class.
 
 ## What a mix consists of
 

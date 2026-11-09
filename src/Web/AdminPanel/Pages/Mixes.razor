@@ -29,24 +29,17 @@
 
 @foreach (var (category, craftings) in this.CraftingGroups)
 {
-    <CollapsibleSection Title="@category.Title" Badge="@craftings.Count.ToString()" InitiallyExpanded="true">
+    <CollapsibleSection Title="@category.Title" Badge="@craftings.Count.ToString()">
         @foreach (var mix in craftings)
         {
-            <div class="card mb-3">
-                <div class="card-header d-flex flex-wrap align-items-baseline gap-2">
-                    <span class="badge text-bg-primary">@mix.Number</span>
-                    <strong>@mix.Name.ToString()</strong>
-                    <small class="text-muted">@mix.ItemCraftingHandlerClassName</small>
-                </div>
-                <div class="card-body">
-                    <CascadingValue TValue="IContext" Value="category.Context">
-                        <AutoForm Model="mix"
-                                  OnValidSubmit="() => this.OnSaveAsync(category)"
-                                  OnCancel="this.GetDiscardCallback(category)"
-                                  IsProcessing="category.IsSaving" />
-                    </CascadingValue>
-                </div>
-            </div>
+            <CollapsibleSection Title="@($"{mix.Number} - {mix.Name.ToString()}")" Description="@mix.ItemCraftingHandlerClassName">
+                <CascadingValue TValue="IContext" Value="category.Context">
+                    <AutoForm Model="mix"
+                              OnValidSubmit="() => this.OnSaveAsync(category)"
+                              OnCancel="this.GetDiscardCallback(category)"
+                              IsProcessing="category.IsSaving" />
+                </CascadingValue>
+            </CollapsibleSection>
         }
     </CollapsibleSection>
 }

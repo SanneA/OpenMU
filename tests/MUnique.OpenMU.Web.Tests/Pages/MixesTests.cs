@@ -33,12 +33,12 @@ public class MixesTests
 
     private BasicModel.SimpleCraftingSettings _settings = null!;
 
-    private Mock<IContext> _firstCategoryContext = null!;
+    private Mock<IContext> _petTrainerContext = null!;
 
-    private Mock<IContext> _secondCategoryContext = null!;
+    private Mock<IContext> _testNpcContext = null!;
 
     /// <summary>
-    /// Sets up the page with two NPCs which offer one mix each.
+    /// Sets up the page with two NPCs which offer mixes; one of them has two mixes in reverse order.
     /// </summary>
     [SetUp]
     public void Setup()
@@ -66,34 +66,54 @@ public class MixesTests
         };
         this._settings.RequiredItems.Add(requiredItem);
 
-        var firstCrafting = new BasicModel.ItemCrafting { Number = 1, Name = "Chaos Weapon", SimpleCraftingSettings = this._settings };
-        var secondCrafting = new BasicModel.ItemCrafting
+        var chaosWeapon = new BasicModel.ItemCrafting
         {
+            Id = Guid.NewGuid(),
+            Number = 1,
+            Name = "Chaos Weapon",
+            SimpleCraftingSettings = this._settings,
+        };
+        var darkHorse = new BasicModel.ItemCrafting
+        {
+            Id = Guid.NewGuid(),
             Number = 2,
             Name = "Dark Horse",
             SimpleCraftingSettings = new BasicModel.SimpleCraftingSettings { SuccessPercent = 60 },
         };
+        var petMix = new BasicModel.ItemCrafting
+        {
+            Id = Guid.NewGuid(),
+            Number = 5,
+            Name = "Pet Mix",
+            SimpleCraftingSettings = new BasicModel.SimpleCraftingSettings { SuccessPercent = 70 },
+        };
 
         var firstMonster = new BasicModel.MonsterDefinition { Id = Guid.NewGuid(), Number = 238, Designation = "Test NPC" };
-        firstMonster.ItemCraftings.Add(firstCrafting);
-        var secondMonster = new BasicModel.MonsterDefinition { Id = Guid.NewGuid(), Number = 226, Designation = "Other NPC" };
-        secondMonster.ItemCraftings.Add(secondCrafting);
+        firstMonster.ItemCraftings.Add(darkHorse);
+        firstMonster.ItemCraftings.Add(chaosWeapon);
+        var secondMonster = new BasicModel.MonsterDefinition { Id = Guid.NewGuid(), Number = 226, Designation = "Pet Trainer" };
+        secondMonster.ItemCraftings.Add(petMix);
 
         var configuration = new BasicModel.GameConfiguration();
         configuration.Monsters.Add(firstMonster);
         configuration.Monsters.Add(secondMonster);
         configuration.Items.Add(jewelOfChaos);
 
-        this._firstCategoryContext = new Mock<IContext>();
-        this._firstCategoryContext.Setup(c => c.GetByIdAsync(It.IsAny<Guid>(), typeof(ItemCrafting), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(firstCrafting);
-        this._firstCategoryContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        this._secondCategoryContext = new Mock<IContext>();
-        this._secondCategoryContext.Setup(c => c.GetByIdAsync(It.IsAny<Guid>(), typeof(ItemCrafting), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(secondCrafting);
-        this._secondCategoryContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var firstCraftings = new Dictionary<Guid, ItemCrafting>
+        {
+            [chaosWeapon.Id] = chaosWeapon,
+            [darkHorse.Id] = darkHorse,
+        };
+        var secondCraftings = new Dictionary<Guid, ItemCrafting>
+        {
+            [petMix.Id] = petMix,
+        };
 
-        var contexts = new Queue<IContext>([this._firstCategoryContext.Object, this._secondCategoryContext.Object]);
+        this._petTrainerContext = CreateContext(secondCraftings);
+        this._testNpcContext = CreateContext(firstCraftings);
+
+        // The page processes the NPCs ordered by their number: 226 (Pet Trainer) first, 238 (Test NPC) second.
+        var contexts = new Queue<IContext>([this._petTrainerContext.Object, this._testNpcContext.Object]);
         var persistenceContextProvider = new Mock<IPersistenceContextProvider>();
         persistenceContextProvider
             .Setup(p => p.CreateNewTypedContext(It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<GameConfiguration?>()))
@@ -128,17 +148,48 @@ public class MixesTests
     }
 
     /// <summary>
-    /// The page groups the mixes by their NPC, and every mix has its own form with a save button.
+    /// All NPC categories are collapsed by default, so no mix is loaded into a form.
     /// </summary>
     [Test]
-    public void ShowsOneFormWithSaveButtonPerMix()
+    public void ShowsAllCategoriesCollapsedByDefault()
     {
         var cut = this.RenderPage();
 
         Assert.That(cut.Markup, Does.Contain("238 - Test NPC"));
-        Assert.That(cut.Markup, Does.Contain("226 - Other NPC"));
-        var saveButtons = cut.FindAll("button").Where(button => button.TextContent.Trim() == "Save").ToList();
-        Assert.That(saveButtons, Has.Count.EqualTo(2), "Every mix should have its own save button.");
+        Assert.That(cut.Markup, Does.Contain("226 - Pet Trainer"));
+        Assert.That(cut.FindAll("form"), Is.Empty, "No mix should be expanded by default.");
+    }
+
+    /// <summary>
+    /// The mixes of a category are sorted by their number and are collapsed as well.
+    /// </summary>
+    [Test]
+    public void ShowsMixesSortedByNumberAndCollapsed()
+    {
+        var cut = this.RenderPage();
+
+        this.FindSectionHeader(cut, "238 - Test NPC").Click();
+
+        var mixHeaders = this.GetSectionHeaders(cut)
+            .Where(header => header.TextContent.Contains("Chaos Weapon") || header.TextContent.Contains("Dark Horse"))
+            .ToList();
+        Assert.That(mixHeaders[0].TextContent.Trim(), Does.StartWith("1 - Chaos Weapon"));
+        Assert.That(mixHeaders[1].TextContent.Trim(), Does.StartWith("2 - Dark Horse"));
+        Assert.That(cut.FindAll("form"), Is.Empty, "The mixes should be collapsed by default.");
+    }
+
+    /// <summary>
+    /// Expanding a mix shows its form with the success rate.
+    /// </summary>
+    [Test]
+    public void ShowsFormOfExpandedMix()
+    {
+        var cut = this.RenderPage();
+        this.ExpandAll(cut);
+
+        var inputValues = cut.FindAll("input[type=number]").Select(input => input.GetAttribute("value")).ToList();
+        Assert.That(inputValues, Has.Some.EqualTo("50"), "The success rate should be shown.");
+        Assert.That(cut.FindAll("button").Count(button => button.TextContent.Trim() == "Save"), Is.EqualTo(3), "Every mix should have its own save button.");
     }
 
     /// <summary>
@@ -148,6 +199,7 @@ public class MixesTests
     public void ChangingSuccessRateUpdatesConfiguration()
     {
         var cut = this.RenderPage();
+        this.ExpandAll(cut);
 
         var input = cut.FindAll("input[type=number]").First(element => element.GetAttribute("value") == "50");
         input.Change("75");
@@ -162,21 +214,23 @@ public class MixesTests
     public void SavePersistsOnlyTheCategoryOfTheMix()
     {
         var cut = this.RenderPage();
+        this.ExpandAll(cut);
 
         var firstForm = cut.FindAll("form").First();
         firstForm.Submit();
 
-        this._firstCategoryContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        this._secondCategoryContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        this._petTrainerContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        this._testNpcContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     /// <summary>
-    /// The required items of a mix can be edited in its form.
+    /// The required items of a mix are shown in its expanded form.
     /// </summary>
     [Test]
     public void ShowsRequiredItemsOfTheMix()
     {
         var cut = this.RenderPage();
+        this.ExpandAll(cut);
 
         Assert.That(cut.Markup, Does.Contain("Jewel of Chaos"), "The possible items should be shown.");
         Assert.That(
@@ -185,10 +239,44 @@ public class MixesTests
             "The required items should be editable.");
     }
 
+    private static Mock<IContext> CreateContext(IReadOnlyDictionary<Guid, ItemCrafting> craftingsById)
+    {
+        var context = new Mock<IContext>();
+        context.Setup(c => c.GetByIdAsync(It.IsAny<Guid>(), typeof(ItemCrafting), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, Type _, CancellationToken _) => craftingsById.GetValueOrDefault(id));
+        context.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        return context;
+    }
+
     private IRenderedComponent<Mixes> RenderPage()
     {
         var cut = this._context.Render<Mixes>();
-        cut.WaitForAssertion(() => Assert.That(cut.Markup, Does.Contain("Chaos Weapon")), TimeSpan.FromSeconds(10));
+        cut.WaitForAssertion(() => Assert.That(cut.Markup, Does.Contain("238 - Test NPC")), TimeSpan.FromSeconds(10));
         return cut;
+    }
+
+    private IReadOnlyList<AngleSharp.Dom.IElement> GetSectionHeaders(IRenderedComponent<Mixes> cut)
+        => cut.FindAll("div.collapsible-section__header");
+
+    private AngleSharp.Dom.IElement FindSectionHeader(IRenderedComponent<Mixes> cut, string title)
+        => this.GetSectionHeaders(cut).First(header => header.TextContent.Contains(title));
+
+    private void ExpandAll(IRenderedComponent<Mixes> cut)
+    {
+        // Expand one collapsed section at a time; expanding a category reveals the headers of its mixes.
+        for (var i = 0; i < 10; i++)
+        {
+            // The section shows a right chevron while it's collapsed and a bottom chevron when expanded.
+            var collapsed = this.GetSectionHeaders(cut)
+                .FirstOrDefault(header => header.QuerySelector("span.oi-chevron-right") is not null);
+            if (collapsed is null)
+            {
+                return;
+            }
+
+            collapsed.Click();
+        }
+
+        Assert.Fail("The sections didn't collapse or expand as expected.");
     }
 }

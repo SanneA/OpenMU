@@ -70,7 +70,10 @@ public partial class Mixes : ComponentBase, IAsyncDisposable
         {
             foreach (var category in this._categories)
             {
-                var craftings = category.Craftings.Where(crafting => this.MatchesFilter(category.Title, crafting)).ToList();
+                var craftings = category.Craftings
+                    .Where(crafting => this.MatchesFilter(category.Title, crafting))
+                    .OrderBy(crafting => crafting.Number)
+                    .ToList();
                 if (craftings.Count > 0)
                 {
                     yield return (category, craftings);
@@ -174,7 +177,7 @@ public partial class Mixes : ComponentBase, IAsyncDisposable
         }
 
         category.Context = context;
-        category.Craftings = craftings;
+        category.Craftings = craftings.OrderBy(crafting => crafting.Number).ToList();
     }
 
     private EventCallback GetDiscardCallback(Category category) => EventCallback.Factory.Create(this, () => this.OnDiscardAsync(category));
