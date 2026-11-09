@@ -1,4 +1,4 @@
-// <copyright file="ChaosGoblinTests.cs" company="MUnique">
+// <copyright file="MixesTests.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -20,11 +20,11 @@ using MUnique.OpenMU.Web.Shared.Services;
 using BasicModel = MUnique.OpenMU.Persistence.BasicModel;
 
 /// <summary>
-/// Tests for the <see cref="ChaosGoblin"/> page.
+/// Tests for the <see cref="Mixes"/> page.
 /// </summary>
 [TestFixture]
 [NonParallelizable]
-public class ChaosGoblinTests
+public class MixesTests
 {
     private BunitContext _context = null!;
 
@@ -35,7 +35,7 @@ public class ChaosGoblinTests
     private BasicModel.SimpleCraftingSettings _settings = null!;
 
     /// <summary>
-    /// Sets up the page with one chaos machine mix of an NPC.
+    /// Sets up the page with one mix of an NPC.
     /// </summary>
     [SetUp]
     public void Setup()
@@ -72,7 +72,7 @@ public class ChaosGoblinTests
         {
             Id = Guid.NewGuid(),
             Number = 238,
-            Designation = "Chaos Goblin",
+            Designation = "Test NPC",
         };
         monster.ItemCraftings.Add(crafting);
 
@@ -91,7 +91,7 @@ public class ChaosGoblinTests
         this._context.Services.AddSingleton(dataSource.Object);
         this._context.Services.AddSingleton(Mock.Of<IToastService>());
         this._context.Services.AddSingleton(new LoadingOverlayService());
-        this._context.Services.AddSingleton(Mock.Of<ILogger<ChaosGoblin>>());
+        this._context.Services.AddSingleton(Mock.Of<ILogger<Mixes>>());
         this._context.ComponentFactories.AddStub<MUnique.OpenMU.Web.Shared.Components.Breadcrumb>();
     }
 
@@ -148,9 +148,9 @@ public class ChaosGoblinTests
         this._persistenceContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private IRenderedComponent<ChaosGoblin> RenderPage()
+    private IRenderedComponent<Mixes> RenderPage()
     {
-        var cut = this._context.Render<ChaosGoblin>();
+        var cut = this._context.Render<Mixes>();
         cut.WaitForAssertion(() => Assert.That(cut.Markup, Does.Contain("Test mix")), TimeSpan.FromSeconds(10));
         return cut;
     }

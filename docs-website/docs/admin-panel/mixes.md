@@ -1,12 +1,12 @@
 ---
-title: Chaos goblin
+title: Mixes
 sidebar_position: 7.6
 description: Configure the success rates and the fail results of the chaos machine mixes on one page.
 ---
 
-# Chaos goblin
+# Mixes
 
-**Navigation:** *Configuration → Chaos Goblin* — route `/chaos-goblin`
+**Navigation:** *Configuration → Mixes* — route `/mixes`
 
 The chaos machine — the chaos goblin, and the other NPCs which use the same
 window — offers a list of mixes: combine a jewel with an item to upgrade it,

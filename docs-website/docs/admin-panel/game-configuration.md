@@ -258,13 +258,13 @@ Route `edit-config-grid/…JewelMix/`
 
 The jewel stacking (mix/unmix) definitions.
 
-## Chaos goblin
+## Mixes
 
-Route `chaos-goblin`
+Route `mixes`
 
-The mixes of the chaos machine, grouped by the NPC which offers them: the success
-rate with its additions, the price, and what happens to every required item when
-the mix fails. See [Chaos goblin](chaos-goblin.md).
+The mixes of the chaos machine and the other NPCs which offer them, grouped by
+the NPC: the success rate with its additions, the price, and what happens to
+every required item when the mix fails. See [Mixes](mixes.md).
 
 ## Content activation
 
