@@ -3,6 +3,8 @@
 @using MUnique.OpenMU.DataModel
 @using MUnique.OpenMU.DataModel.Configuration
 @using MUnique.OpenMU.DataModel.Configuration.ItemCrafting
+@using MUnique.OpenMU.DataModel.Configuration.Items
+@using MUnique.OpenMU.Persistence
 @using MUnique.OpenMU.Web.AdminPanel.Components.ItemDrops
 @using MUnique.OpenMU.Web.AdminPanel.Properties
 
@@ -12,7 +14,7 @@
 <h1>@Resources.Mixes</h1>
 <p class="text-muted">@Resources.MixesPageDescription</p>
 
-@if (this._gameConfiguration is null || this._persistenceContext is null)
+@if (this._gameConfiguration is null || this._editContext is null)
 {
     return;
 }
@@ -29,9 +31,9 @@
     <p class="text-muted fst-italic">@Resources.NoChaosMixes</p>
 }
 
-@foreach (var (monster, craftings) in this.CraftingGroups)
+@foreach (var (title, craftings) in this.CraftingGroups)
 {
-    <CollapsibleSection Title="@($"{monster.Number} - {monster.Designation}")" Badge="@craftings.Count.ToString()" InitiallyExpanded="true">
+    <CollapsibleSection Title="@title" Badge="@craftings.Count.ToString()" InitiallyExpanded="true">
         @foreach (var crafting in craftings)
         {
             <div class="card mb-3">
@@ -75,50 +77,89 @@
                             </div>
                         </div>
 
-                        <h6 class="text-uppercase text-muted small">@Resources.RequiredItems</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle mb-3">
-                                <thead>
-                                <tr>
-                                    <th>@Resources.Item</th>
-                                    <th>@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MinimumAmount)) / @Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MaximumAmount))</th>
-                                    <th title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.AddPercentage))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.AddPercentage))</th>
-                                    <th title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.NpcPriceDivisor))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.NpcPriceDivisor))</th>
-                                    <th title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.SuccessResult))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.SuccessResult))</th>
-                                    <th title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.FailResult))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.FailResult))</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                @foreach (var requiredItem in settings.RequiredItems)
-                                {
-                                    <tr>
-                                        <td class="small">@requiredItem</td>
-                                        <td class="small text-nowrap">@requiredItem.MinimumAmount / @requiredItem.MaximumAmount</td>
-                                        <td><input type="number" min="0" max="100" class="form-control form-control-sm" style="min-width: 5rem" @bind="requiredItem.AddPercentage" /></td>
-                                        <td><input type="number" min="0" class="form-control form-control-sm" style="min-width: 6rem" @bind="requiredItem.NpcPriceDivisor" /></td>
-                                        <td>
-                                            <select class="form-select form-select-sm" @bind="requiredItem.SuccessResult">
-                                                @foreach (var mixResult in Enum.GetValues<MixResult>())
-                                                {
-                                                    <option value="@mixResult">@mixResult.GetEnumCaption()</option>
-                                                }
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select class="form-select form-select-sm" @bind="requiredItem.FailResult">
-                                                @foreach (var mixResult in Enum.GetValues<MixResult>())
-                                                {
-                                                    <option value="@mixResult">@mixResult.GetEnumCaption()</option>
-                                                }
-                                            </select>
-                                        </td>
-                                    </tr>
-                                }
-                                </tbody>
-                            </table>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <h6 class="text-uppercase text-muted small mb-0">@Resources.RequiredItems</h6>
+                            <button type="button" class="btn btn-outline-primary btn-sm" @onclick="() => this.OnAddRequiredItem(crafting)">@Resources.AddRequiredItem</button>
                         </div>
+                        @foreach (var requiredItem in settings.RequiredItems)
+                        {
+                            <div class="border rounded p-2 mb-2">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <strong class="small">@requiredItem</strong>
+                                    <button type="button" class="btn btn-outline-danger btn-sm ms-auto" @onclick="() => this.OnRemoveRequiredItemAsync(crafting, requiredItem)">@Resources.Remove</button>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6 col-md-2 col-xl-1">
+                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MinimumAmount))</label>
+                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.MinimumAmount" />
+                                    </div>
+                                    <div class="col-6 col-md-2 col-xl-1">
+                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MaximumAmount))</label>
+                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.MaximumAmount" />
+                                    </div>
+                                    <div class="col-6 col-md-2 col-xl-1">
+                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MinimumItemLevel))</label>
+                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.MinimumItemLevel" />
+                                    </div>
+                                    <div class="col-6 col-md-2 col-xl-1">
+                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.MaximumItemLevel))</label>
+                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.MaximumItemLevel" />
+                                    </div>
+                                    <div class="col-6 col-md-2 col-xl-1">
+                                        <label class="form-label small mb-1" title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.AddPercentage))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.AddPercentage))</label>
+                                        <input type="number" min="0" max="100" class="form-control form-control-sm" @bind="requiredItem.AddPercentage" />
+                                    </div>
+                                    <div class="col-6 col-md-2 col-xl-1">
+                                        <label class="form-label small mb-1" title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.NpcPriceDivisor))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.NpcPriceDivisor))</label>
+                                        <input type="number" min="0" class="form-control form-control-sm" @bind="requiredItem.NpcPriceDivisor" />
+                                    </div>
+                                    <div class="col-6 col-md-2 col-xl-1">
+                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.Reference))</label>
+                                        <input type="number" min="0" max="255" class="form-control form-control-sm" @bind="requiredItem.Reference" />
+                                    </div>
+                                    <div class="col-6 col-md-3 col-xl-2">
+                                        <label class="form-label small mb-1" title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.SuccessResult))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.SuccessResult))</label>
+                                        <select class="form-select form-select-sm" @bind="requiredItem.SuccessResult">
+                                            @foreach (var mixResult in Enum.GetValues<MixResult>())
+                                            {
+                                                <option value="@mixResult">@mixResult.GetEnumCaption()</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-6 col-md-3 col-xl-2">
+                                        <label class="form-label small mb-1" title="@Description(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.FailResult))">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.FailResult))</label>
+                                        <select class="form-select form-select-sm" @bind="requiredItem.FailResult">
+                                            @foreach (var mixResult in Enum.GetValues<MixResult>())
+                                            {
+                                                <option value="@mixResult">@mixResult.GetEnumCaption()</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.PossibleItems))</label>
+                                        <select multiple size="6" class="form-select form-select-sm"
+                                                @onchange="args => this.OnPossibleItemsChanged(requiredItem, args)">
+                                            @foreach (var item in this.Items)
+                                            {
+                                                <option value="@item.GetId()" selected="@requiredItem.PossibleItems.Contains(item)">@item.Name.ToString()</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label small mb-1">@Caption(typeof(ItemCraftingRequiredItem), nameof(ItemCraftingRequiredItem.RequiredItemOptions))</label>
+                                        <select multiple size="6" class="form-select form-select-sm"
+                                                @onchange="args => this.OnRequiredItemOptionsChanged(requiredItem, args)">
+                                            @foreach (var optionType in this.OptionTypes)
+                                            {
+                                                <option value="@optionType.GetId()" selected="@requiredItem.RequiredItemOptions.Contains(optionType)">@optionType.Name.ToString()</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        }
 
-                        <h6 class="text-uppercase text-muted small">@Resources.Price</h6>
+                        <h6 class="text-uppercase text-muted small mt-3">@Resources.Price</h6>
                         <div class="row g-3 mb-3">
                             <div class="col-6 col-md-3 col-xl-2">
                                 <label class="form-label small mb-1" title="@Description(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.Money))">@Caption(typeof(SimpleCraftingSettings), nameof(SimpleCraftingSettings.Money))</label>

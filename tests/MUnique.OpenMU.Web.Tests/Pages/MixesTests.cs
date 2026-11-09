@@ -30,7 +30,7 @@ public class MixesTests
 
     private CultureInfo _previousUiCulture = null!;
 
-    private Mock<IContext> _persistenceContext = null!;
+    private Mock<IContext> _editContext = null!;
 
     private BasicModel.SimpleCraftingSettings _settings = null!;
 
@@ -52,6 +52,9 @@ public class MixesTests
             FailResult = MixResult.StaysAsIs,
         };
 
+        var jewelOfChaos = new BasicModel.ItemDefinition { Id = Guid.NewGuid(), Name = "Jewel of Chaos" };
+        requiredItem.PossibleItems.Add(jewelOfChaos);
+
         this._settings = new BasicModel.SimpleCraftingSettings
         {
             SuccessPercent = 50,
@@ -64,7 +67,7 @@ public class MixesTests
         var crafting = new BasicModel.ItemCrafting
         {
             Number = 1,
-            Name = "Test mix",
+            Name = "Chaos Weapon",
             SimpleCraftingSettings = this._settings,
         };
 
@@ -78,17 +81,32 @@ public class MixesTests
 
         var configuration = new BasicModel.GameConfiguration();
         configuration.Monsters.Add(monster);
+        configuration.Items.Add(jewelOfChaos);
 
-        this._persistenceContext = new Mock<IContext>();
-        this._persistenceContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        this._editContext = new Mock<IContext>();
+        this._editContext.Setup(c => c.GetAsync(typeof(ItemCrafting), It.IsAny<CancellationToken>())).ReturnsAsync(new object[] { crafting });
+        this._editContext.Setup(c => c.GetAsync(typeof(MUnique.OpenMU.DataModel.Configuration.Items.ItemDefinition), It.IsAny<CancellationToken>())).ReturnsAsync(new object[] { jewelOfChaos });
+        this._editContext.Setup(c => c.GetAsync(typeof(MUnique.OpenMU.DataModel.Configuration.Items.ItemOptionType), It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<object>());
+        this._editContext.Setup(c => c.CreateNew<ItemCraftingRequiredItem>(It.IsAny<object?[]>()))
+            .Returns(() => new BasicModel.ItemCraftingRequiredItem());
+        this._editContext.Setup(c => c.DeleteAsync(It.IsAny<ItemCraftingRequiredItem>())).ReturnsAsync(true);
+        this._editContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var persistenceContextProvider = new Mock<IPersistenceContextProvider>();
+        persistenceContextProvider
+            .Setup(p => p.CreateNewTypedContext(It.IsAny<Type>(), It.IsAny<bool>(), It.IsAny<GameConfiguration?>()))
+            .Returns(this._editContext.Object);
+
         var dataSource = new Mock<IDataSource<GameConfiguration>>();
-        dataSource.Setup(s => s.GetContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(this._persistenceContext.Object);
         dataSource.Setup(s => s.GetOwnerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(configuration);
+        dataSource.Setup(s => s.ForceDiscardChangesAsync()).Returns(ValueTask.CompletedTask);
+        dataSource.Setup(s => s.DiscardChangesAsync()).Returns(ValueTask.CompletedTask);
 
         this._context = new BunitContext();
         this._context.JSInterop.Mode = JSRuntimeMode.Loose;
         this._context.Services.Configure<RequestLocalizationOptions>(options => options.AddSupportedUICultures("en"));
         this._context.Services.AddSingleton(dataSource.Object);
+        this._context.Services.AddSingleton(persistenceContextProvider.Object);
         this._context.Services.AddSingleton(Mock.Of<IToastService>());
         this._context.Services.AddSingleton(new LoadingOverlayService());
         this._context.Services.AddSingleton(Mock.Of<ILogger<Mixes>>());
@@ -136,7 +154,7 @@ public class MixesTests
     }
 
     /// <summary>
-    /// Saving the page persists the changes through the context.
+    /// Saving the page persists the changes through the editing context.
     /// </summary>
     [Test]
     public void SavePersistsTheChanges()
@@ -145,13 +163,42 @@ public class MixesTests
 
         cut.FindAll("button").First(button => button.TextContent.Contains("Save changes")).Click();
 
-        this._persistenceContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        this._editContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// A new required item is created and added to the mix.
+    /// </summary>
+    [Test]
+    public void AddsRequiredItem()
+    {
+        var cut = this.RenderPage();
+
+        cut.FindAll("button").First(button => button.TextContent.Contains("Add required item")).Click();
+
+        Assert.That(this._settings.RequiredItems, Has.Count.EqualTo(2));
+        this._editContext.Verify(c => c.CreateNew<ItemCraftingRequiredItem>(It.IsAny<object?[]>()), Times.Once);
+    }
+
+    /// <summary>
+    /// A required item is removed and deleted.
+    /// </summary>
+    [Test]
+    public void RemovesRequiredItem()
+    {
+        var cut = this.RenderPage();
+        var requiredItem = this._settings.RequiredItems.Single();
+
+        cut.FindAll("button").First(button => button.TextContent.Contains("Remove")).Click();
+
+        Assert.That(this._settings.RequiredItems, Is.Empty);
+        this._editContext.Verify(c => c.DeleteAsync(requiredItem), Times.Once);
     }
 
     private IRenderedComponent<Mixes> RenderPage()
     {
         var cut = this._context.Render<Mixes>();
-        cut.WaitForAssertion(() => Assert.That(cut.Markup, Does.Contain("Test mix")), TimeSpan.FromSeconds(10));
+        cut.WaitForAssertion(() => Assert.That(cut.Markup, Does.Contain("Chaos Weapon")), TimeSpan.FromSeconds(10));
         return cut;
     }
 }

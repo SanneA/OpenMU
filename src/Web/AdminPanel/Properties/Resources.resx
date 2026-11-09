@@ -2743,6 +2743,9 @@
   <data name="RequiredItems" xml:space="preserve">
     <value>Required items</value>
   </data>
+  <data name="AddRequiredItem" xml:space="preserve">
+    <value>Add required item</value>
+  </data>
   <data name="Result" xml:space="preserve">
     <value>Result</value>
   </data>
