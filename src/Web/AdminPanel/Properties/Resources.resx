@@ -2740,4 +2740,13 @@
   <data name="ExcellentOptionsHint" xml:space="preserve">
     <value>Empty means that the value of the excellent option definition of the item applies. The first option is always added without a chance.</value>
   </data>
+  <data name="Mixes" xml:space="preserve">
+    <value>Mixes</value>
+  </data>
+  <data name="MixesPageDescription" xml:space="preserve">
+    <value>The mixes of the chaos machine and the other NPCs which offer them, grouped by the NPC. Here you see the success rates and what happens to the required items when a mix fails.</value>
+  </data>
+  <data name="NoChaosMixes" xml:space="preserve">
+    <value>The game configuration contains no chaos machine mixes.</value>
+  </data>
 </root>
