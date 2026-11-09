@@ -8211,7 +8211,10 @@ namespace MUnique.OpenMU.Web.AdminPanel.Properties {
         public static string Rates {
             get {
                 return ResourceManager.GetString("Rates", resourceCulture);
+            }
+        }
 
+        /// <summary>
         ///   Looks up a localized string similar to Mixes.
         /// </summary>
         public static string Mixes {
@@ -8221,12 +8224,15 @@ namespace MUnique.OpenMU.Web.AdminPanel.Properties {
         }
 
         /// <summary>
-
         ///   Looks up a localized string similar to Money rate.
         /// </summary>
         public static string MoneyRate {
             get {
                 return ResourceManager.GetString("MoneyRate", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The mixes of the chaos machine and the other NPCs which offer them, grouped by the NPC..
         /// </summary>
         public static string MixesPageDescription {
@@ -8277,6 +8283,10 @@ namespace MUnique.OpenMU.Web.AdminPanel.Properties {
         public static string ExcellentOptionsHint {
             get {
                 return ResourceManager.GetString("ExcellentOptionsHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The game configuration contains no chaos machine mixes..
         /// </summary>
         public static string NoChaosMixes {
