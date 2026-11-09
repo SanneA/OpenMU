@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.DataModel;
 using MUnique.OpenMU.DataModel.Configuration;
-using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Configuration.ItemCrafting;
 using MUnique.OpenMU.Persistence;
 using MUnique.OpenMU.Web.AdminPanel.Properties;
@@ -18,20 +17,13 @@ using MUnique.OpenMU.Web.Shared.Services;
 
 /// <summary>
 /// A page which shows the crafting definitions (mixes) of the chaos machine and the other NPCs which offer them.
+/// Each mix is edited and saved on its own.
 /// </summary>
 public partial class Mixes : ComponentBase, IAsyncDisposable
 {
-    private readonly List<(string Title, IReadOnlyList<ItemCrafting> Craftings)> _groups = [];
-
-    private readonly Dictionary<Guid, ItemCrafting> _craftingsById = [];
-
-    private readonly Dictionary<Guid, ItemDefinition> _itemsById = [];
-
-    private readonly Dictionary<Guid, ItemOptionType> _optionTypesById = [];
+    private readonly List<Category> _categories = [];
 
     private GameConfiguration? _gameConfiguration;
-
-    private IContext? _editContext;
 
     private CancellationTokenSource? _disposeCts;
 
@@ -69,23 +61,19 @@ public partial class Mixes : ComponentBase, IAsyncDisposable
     [Inject]
     public ILogger<Mixes> Logger { get; set; } = null!;
 
-    private IEnumerable<ItemDefinition> Items => this._itemsById.Values.OrderBy(item => item.Name.ValueInNeutralLanguage, StringComparer.CurrentCultureIgnoreCase);
-
-    private IEnumerable<ItemOptionType> OptionTypes => this._optionTypesById.Values.OrderBy(type => type.Name.ToString(), StringComparer.CurrentCultureIgnoreCase);
-
     /// <summary>
     /// Gets the monsters with their crafting definitions, grouped and filtered by the search term.
     /// </summary>
-    private IEnumerable<(string Title, IReadOnlyList<ItemCrafting> Craftings)> CraftingGroups
+    private IEnumerable<(Category Category, IReadOnlyList<ItemCrafting> Craftings)> CraftingGroups
     {
         get
         {
-            foreach (var (title, craftings) in this._groups)
+            foreach (var category in this._categories)
             {
-                var filtered = craftings.Where(crafting => this.MatchesFilter(title, crafting)).ToList();
-                if (filtered.Count > 0)
+                var craftings = category.Craftings.Where(crafting => this.MatchesFilter(category.Title, crafting)).ToList();
+                if (craftings.Count > 0)
                 {
-                    yield return (title, filtered);
+                    yield return (category, craftings);
                 }
             }
         }
@@ -111,8 +99,10 @@ public partial class Mixes : ComponentBase, IAsyncDisposable
             // and we should not throw exceptions in the dispose method
         }
 
-        this._editContext?.Dispose();
-        this._editContext = null;
+        foreach (var category in this._categories)
+        {
+            category.Dispose();
+        }
     }
 
     /// <inheritdoc />
@@ -124,20 +114,6 @@ public partial class Mixes : ComponentBase, IAsyncDisposable
         await base.OnParametersSetAsync().ConfigureAwait(true);
     }
 
-    private static string Caption(Type type, string propertyName) => type.GetPropertyCaption(propertyName);
-
-    private static string? Description(Type type, string propertyName) => type.GetPropertyDescription(propertyName);
-
-    private static IEnumerable<string> GetSelectedValues(ChangeEventArgs args)
-    {
-        return args.Value switch
-        {
-            string[] values => values,
-            string single => [single],
-            _ => [],
-        };
-    }
-
     private async Task LoadDataAsync(CancellationToken cancellationToken)
     {
         using var loading = this.LoadingService.ShowLoadingIndicator();
@@ -146,56 +122,24 @@ public partial class Mixes : ComponentBase, IAsyncDisposable
             cancellationToken.ThrowIfCancellationRequested();
 
             var gameConfiguration = await this.DataSource.GetOwnerAsync(cancellationToken: cancellationToken).ConfigureAwait(true);
-            var editContext = this.PersistenceContextProvider.CreateNewTypedContext(typeof(ItemCrafting), true, gameConfiguration);
-            var craftings = (await editContext.GetAsync(typeof(ItemCrafting), cancellationToken).ConfigureAwait(true))
-                .OfType<ItemCrafting>()
-                .ToList();
-            var items = (await editContext.GetAsync(typeof(ItemDefinition), cancellationToken).ConfigureAwait(true))
-                .OfType<ItemDefinition>()
-                .ToList();
-            var optionTypes = (await editContext.GetAsync(typeof(ItemOptionType), cancellationToken).ConfigureAwait(true))
-                .OfType<ItemOptionType>()
-                .ToList();
-            cancellationToken.ThrowIfCancellationRequested();
-
-            this._craftingsById.Clear();
-            foreach (var crafting in craftings)
-            {
-                this._craftingsById[crafting.GetId()] = crafting;
-            }
-
-            this._itemsById.Clear();
-            foreach (var item in items)
-            {
-                this._itemsById[item.GetId()] = item;
-            }
-
-            this._optionTypesById.Clear();
-            foreach (var optionType in optionTypes)
-            {
-                this._optionTypesById[optionType.GetId()] = optionType;
-            }
-
-            var groups = new List<(string Title, IReadOnlyList<ItemCrafting> Craftings)>();
+            var categories = new List<Category>();
             foreach (var monster in gameConfiguration.Monsters.Where(monster => monster.ItemCraftings.Count > 0).OrderBy(monster => monster.Number))
             {
-                var monsterCraftings = monster.ItemCraftings
-                    .Where(crafting => this._craftingsById.ContainsKey(crafting.GetId()))
-                    .Select(crafting => this._craftingsById[crafting.GetId()])
-                    .OrderBy(crafting => crafting.Number)
-                    .ToList();
-                if (monsterCraftings.Count > 0)
-                {
-                    groups.Add(($"{monster.Number} - {monster.Designation}", monsterCraftings));
-                }
+                var category = new Category(monster.GetId(), $"{monster.Number} - {monster.Designation}");
+                await this.LoadCategoryAsync(category, monster.ItemCraftings.Select(crafting => crafting.GetId()), gameConfiguration, cancellationToken).ConfigureAwait(true);
+                categories.Add(category);
             }
 
-            this._groups.Clear();
-            this._groups.AddRange(groups);
-            this._gameConfiguration = gameConfiguration;
+            cancellationToken.ThrowIfCancellationRequested();
 
-            this._editContext?.Dispose();
-            this._editContext = editContext;
+            foreach (var category in this._categories)
+            {
+                category.Dispose();
+            }
+
+            this._categories.Clear();
+            this._categories.AddRange(categories);
+            this._gameConfiguration = gameConfiguration;
 
             await this.InvokeAsync(this.StateHasChanged).ConfigureAwait(true);
         }
@@ -209,99 +153,87 @@ public partial class Mixes : ComponentBase, IAsyncDisposable
         }
     }
 
-    private async Task OnSaveButtonClickAsync()
+    private async Task LoadCategoryAsync(Category category, IEnumerable<Guid> craftingIds, GameConfiguration gameConfiguration, CancellationToken cancellationToken)
     {
+        var context = this.PersistenceContextProvider.CreateNewTypedContext(typeof(ItemCrafting), true, gameConfiguration);
+        var craftings = new List<ItemCrafting>();
         try
         {
-            if (this._editContext is { } context)
+            foreach (var craftingId in craftingIds)
             {
-                var success = await context.SaveChangesAsync().ConfigureAwait(true);
-                this.ToastService.ShowSuccess(success ? Resources.SavedChanges : Resources.NoChangesToSave);
-                await this.DataSource.ForceDiscardChangesAsync().ConfigureAwait(true);
-                this._craftingsById.Clear();
-                this._groups.Clear();
-                this._editContext.Dispose();
-                this._editContext = null;
-                await this.LoadDataAsync(this._disposeCts?.Token ?? default).ConfigureAwait(true);
+                if (await context.GetByIdAsync(craftingId, typeof(ItemCrafting), cancellationToken).ConfigureAwait(true) is ItemCrafting crafting)
+                {
+                    craftings.Add(crafting);
+                }
             }
-            else
-            {
-                this.ToastService.ShowError(Resources.FailedByUninitializedContext);
-            }
+        }
+        catch
+        {
+            context.Dispose();
+            throw;
+        }
+
+        category.Context = context;
+        category.Craftings = craftings;
+    }
+
+    private EventCallback GetDiscardCallback(Category category) => EventCallback.Factory.Create(this, () => this.OnDiscardAsync(category));
+
+    private async Task OnSaveAsync(Category category)
+    {
+        if (category.Context is not { } context)
+        {
+            this.ToastService.ShowError(Resources.FailedByUninitializedContext);
+            return;
+        }
+
+        category.IsSaving = true;
+        try
+        {
+            var success = await context.SaveChangesAsync().ConfigureAwait(true);
+            this.ToastService.ShowSuccess(success ? Resources.SavedChanges : Resources.NoChangesToSave);
         }
         catch (Exception ex)
         {
             this.Logger.LogError(ex, "An unexpected error occurred on save: {Message}", ex.Message);
             this.ToastService.ShowError(string.Format(Resources.UnexpectedErrorOccurred, ex.Message));
         }
+        finally
+        {
+            category.IsSaving = false;
+        }
     }
 
-    private async Task OnDiscardButtonClickAsync()
+    private async Task OnDiscardAsync(Category category)
     {
-        if (this._editContext?.HasChanges is not true)
+        if (this._gameConfiguration is not { } gameConfiguration || category.Context?.HasChanges is not true)
         {
             return;
         }
 
-        await this.DataSource.DiscardChangesAsync().ConfigureAwait(true);
-        this._editContext.Dispose();
-        this._editContext = null;
-        this._craftingsById.Clear();
-        this._groups.Clear();
-        await this.LoadDataAsync(this._disposeCts?.Token ?? default).ConfigureAwait(true);
-    }
+        var craftingIds = this._gameConfiguration.Monsters
+            .Where(monster => monster.GetId() == category.MonsterId)
+            .SelectMany(monster => monster.ItemCraftings)
+            .Select(crafting => crafting.GetId())
+            .ToList();
 
-    private void OnAddRequiredItem(ItemCrafting crafting)
-    {
-        if (crafting.SimpleCraftingSettings is not { } settings || this._editContext is not { } context)
+        var reloaded = new Category(category.MonsterId, category.Title);
+        try
         {
+            await this.LoadCategoryAsync(reloaded, craftingIds, gameConfiguration, this._disposeCts?.Token ?? default).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogError(ex, "Error reloading the mixes of {Category}", category.Title);
             return;
         }
 
-        var requiredItem = context.CreateNew<ItemCraftingRequiredItem>();
-        requiredItem.MinimumAmount = 1;
-        requiredItem.MaximumAmount = 1;
-        requiredItem.SuccessResult = MixResult.Disappear;
-        requiredItem.FailResult = MixResult.Disappear;
-        settings.RequiredItems.Add(requiredItem);
+        category.Dispose();
+        category.Context = reloaded.Context;
+        category.Craftings = reloaded.Craftings;
     }
 
-    private async Task OnRemoveRequiredItemAsync(ItemCrafting crafting, ItemCraftingRequiredItem requiredItem)
-    {
-        if (crafting.SimpleCraftingSettings is not { } settings || this._editContext is not { } context)
-        {
-            return;
-        }
-
-        settings.RequiredItems.Remove(requiredItem);
-        await context.DeleteAsync(requiredItem).ConfigureAwait(true);
-    }
-
-    private void OnPossibleItemsChanged(ItemCraftingRequiredItem requiredItem, ChangeEventArgs args)
-    {
-        requiredItem.PossibleItems.Clear();
-        foreach (var id in GetSelectedValues(args))
-        {
-            if (Guid.TryParse(id, out var parsedId) && this._itemsById.TryGetValue(parsedId, out var item))
-            {
-                requiredItem.PossibleItems.Add(item);
-            }
-        }
-    }
-
-    private void OnRequiredItemOptionsChanged(ItemCraftingRequiredItem requiredItem, ChangeEventArgs args)
-    {
-        requiredItem.RequiredItemOptions.Clear();
-        foreach (var id in GetSelectedValues(args))
-        {
-            if (Guid.TryParse(id, out var parsedId) && this._optionTypesById.TryGetValue(parsedId, out var optionType))
-            {
-                requiredItem.RequiredItemOptions.Add(optionType);
-            }
-        }
-    }
-
-    private bool MatchesFilter(string monsterTitle, ItemCrafting crafting)
+    private bool MatchesFilter(string categoryTitle, ItemCrafting crafting)
     {
         if (string.IsNullOrWhiteSpace(this._filter))
         {
@@ -309,11 +241,56 @@ public partial class Mixes : ComponentBase, IAsyncDisposable
         }
 
         var filter = this._filter.Trim();
-        return Matches(monsterTitle)
+        return Matches(categoryTitle)
                || Matches(crafting.Name.ToString()) || Matches(crafting.Name.ValueInNeutralLanguage)
                || Matches(crafting.ItemCraftingHandlerClassName)
                || crafting.Number.ToString(System.Globalization.CultureInfo.InvariantCulture).Contains(filter, StringComparison.OrdinalIgnoreCase);
 
         bool Matches(string? text) => text?.Contains(filter, StringComparison.OrdinalIgnoreCase) is true;
+    }
+
+    /// <summary>
+    /// A category of mixes, i.e. the mixes of one NPC, with the editing context of that NPC.
+    /// </summary>
+    private sealed class Category : IDisposable
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Category"/> class.
+        /// </summary>
+        /// <param name="monsterId">The identifier of the NPC which offers the mixes.</param>
+        /// <param name="title">The caption of the category.</param>
+        public Category(Guid monsterId, string title)
+        {
+            this.MonsterId = monsterId;
+            this.Title = title;
+        }
+
+        /// <summary>
+        /// Gets the identifier of the NPC which offers the mixes.
+        /// </summary>
+        public Guid MonsterId { get; }
+
+        /// <summary>
+        /// Gets the caption of the category.
+        /// </summary>
+        public string Title { get; }
+
+        /// <summary>
+        /// Gets or sets the editing context which contains the mixes of this category.
+        /// </summary>
+        public IContext? Context { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the category is being saved.
+        /// </summary>
+        public bool IsSaving { get; set; }
+
+        /// <summary>
+        /// Gets or sets the mixes which are shown.
+        /// </summary>
+        public IReadOnlyList<ItemCrafting> Craftings { get; set; } = [];
+
+        /// <inheritdoc />
+        public void Dispose() => this.Context?.Dispose();
     }
 }
