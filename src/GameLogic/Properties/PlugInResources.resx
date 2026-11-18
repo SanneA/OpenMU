@@ -2214,4 +2214,8 @@
   <data name="BotMerchantConfiguration_CityMapNumbers_Description" xml:space="preserve"><value>The numbers of the city maps, separated by commas (0 = Lorencia, 2 = Devias, 3 = Noria, 51 = Elvenland). The bots open their store in the safezone near the spawn gate.</value></data>
   <data name="BotMerchantConfiguration_NewMerchantsPerCheck_Name" xml:space="preserve"><value>New merchants per 30 seconds</value></data>
   <data name="BotMerchantConfiguration_NewMerchantsPerCheck_Description" xml:space="preserve"><value>How many bots at most start a shift every 30 seconds. After a server start, the market fills up within minutes instead of all at once, and the parties of the bots don't fall apart together.</value></data>
+  <data name="DanceChatCommandPlugIn_Name" xml:space="preserve"><value>Dance chat command</value></data>
+  <data name="DanceChatCommandPlugIn_Description" xml:space="preserve"><value>Makes the character dance. Usage: /dance</value></data>
+  <data name="DanceChatCommandConfiguration_AnimationNumber_Name" xml:space="preserve"><value>Animation number</value></data>
+  <data name="DanceChatCommandConfiguration_AnimationNumber_Description" xml:space="preserve"><value>The client animation number which is sent for the dance. It depends on the client version; the default is 14, so adjust it if necessary.</value></data>
 </root>
