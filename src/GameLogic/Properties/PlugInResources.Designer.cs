@@ -8745,5 +8745,41 @@ namespace MUnique.OpenMU.GameLogic.Properties {
                 return ResourceManager.GetString("WorldChatChatCommandPlugIn_Name", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The client animation number which is sent for the dance. It depends on the client version; the default is 14, so adjust it if necessary..
+        /// </summary>
+        public static string DanceChatCommandConfiguration_AnimationNumber_Description {
+            get {
+                return ResourceManager.GetString("DanceChatCommandConfiguration_AnimationNumber_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Animation number.
+        /// </summary>
+        public static string DanceChatCommandConfiguration_AnimationNumber_Name {
+            get {
+                return ResourceManager.GetString("DanceChatCommandConfiguration_AnimationNumber_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Makes the character dance. Usage: /dance.
+        /// </summary>
+        public static string DanceChatCommandPlugIn_Description {
+            get {
+                return ResourceManager.GetString("DanceChatCommandPlugIn_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dance chat command.
+        /// </summary>
+        public static string DanceChatCommandPlugIn_Name {
+            get {
+                return ResourceManager.GetString("DanceChatCommandPlugIn_Name", resourceCulture);
+            }
+        }
     }
 }
